@@ -1,0 +1,121 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
+void main() {
+  runApp(const RampApp());
+}
+
+class RampApp extends StatelessWidget {
+  const RampApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: RampHomePage(),
+    );
+  }
+}
+
+class RampHomePage extends StatefulWidget {
+  @override
+  _RampHomePageState createState() => _RampHomePageState();
+}
+
+class _RampHomePageState extends State<RampHomePage> {
+  final TextEditingController addressController = TextEditingController();
+  final List<Marker> _markers = [];
+
+  static const LatLng _initialPosition = LatLng(-20.145845964893105, -44.889961596468254);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('App de Rampas de Acesso'),
+        backgroundColor: Colors.blue,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: addressController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Endereço (exemplo: -20.145, -44.889)',
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _addRamp,
+            child: const Text('Adicionar Rampa'),
+          ),
+          Expanded(
+            child: FlutterMap(
+              options: MapOptions(
+                center: _initialPosition,
+                zoom: 15,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: ['a', 'b', 'c'],
+                ),
+                MarkerLayer(markers: _markers),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addRamp() {
+    final input = addressController.text;
+    final parts = input.split(',');
+    if (parts.length != 2) {
+      _showErrorDialog('Erro', 'Formato inválido. Use latitude,longitude.');
+      return;
+    }
+
+    final latitude = double.tryParse(parts[0].trim());
+    final longitude = double.tryParse(parts[1].trim());
+    if (latitude == null || longitude == null) {
+      _showErrorDialog('Erro', 'Coordenadas inválidas. Use números decimais.');
+      return;
+    }
+
+    final position = LatLng(latitude, longitude);
+
+    setState(() {
+      _markers.add(
+        Marker(
+          point: position,
+          builder: (context) => const Icon(
+            Icons.location_on,
+            color: Colors.red,
+            size: 40,
+          ),
+        ),
+      );
+    });
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
